@@ -1,0 +1,122 @@
+type nonce.
+
+fun validateEvidence(bitstring): bitstring.
+
+
+(*Symmetric Encryption*)
+type key.
+fun senc(bitstring, key): bitstring.
+reduc forall m: bitstring, k: key; sdec(senc(m,k),k) = m.
+
+(* Digital Signatures *)
+type skey.
+type pkey.
+fun pk(skey): pkey.
+fun sign(bitstring, skey) : bitstring.
+reduc forall m: bitstring, k: skey; getmess(sign(m, k)) = m.
+reduc forall m: bitstring, k: skey; checksign(sign(m, k), pk(k)) = m.
+
+(* Hashing *)
+fun hash(bitstring) : bitstring.
+fun key_to_bitstring(key): bitstring [data,typeConverter].
+
+
+free network: channel.
+
+(* Security queries *)
+
+event relyingPartyAccepts(key, bitstring, nonce, bitstring).
+event relyingPartyBegins(key, nonce, bitstring).
+event attesterBegins(pkey, bitstring, bitstring, bitstring).
+event verifierAccepts(pkey, key, bitstring, bitstring, nonce).
+event attesterCorrupted(key).
+
+query  PK_a: pkey, K_a, K_v: key, R_a: bitstring, c:nonce,
+id: bitstring, h: bitstring, M: bitstring, Cha: bitstring; 
+inj-event(relyingPartyAccepts(K_v, R_a, c, id)) 
+==> 
+    event(attesterCorrupted(K_a)) ||
+    (inj-event(relyingPartyBegins(K_v, c, id)) &&
+    inj-event(attesterBegins(PK_a, h, M, Cha)) &&
+    inj-event(verifierAccepts(PK_a, K_v, M, id, c)) &&
+    R_a = validateEvidence(M) &&
+    id = hash((h, PK_a)) && 
+    Cha = senc((c,id), K_v)) 
+. 
+
+
+(* query  K_v: key, R_a: bitstring, c:nonce, h: bitstring; 
+event(relyingPartyAccepts(K_v, R_a, c, h)) 
+(* ==> false *)
+.  *)
+
+(* Secrecy queries *)
+
+query  PK_a: pkey, K_v: key, R_a: bitstring, c:nonce,
+h: bitstring; 
+attacker(R_a) && event(relyingPartyAccepts(K_v, R_a, c, h)) 
+==> false
+.
+
+
+let relyingPartyRP(K_a: key, K_v: key, id: bitstring) = 
+  new c: nonce;
+  (* let h = hash(K_a) in *)
+  let Cha = senc((c,id), K_v) in 
+  event relyingPartyBegins(K_v, c, id);
+  out(network, Cha);
+  in(network, Res: bitstring);
+  let (R_a: bitstring, =c , =id) = sdec(Res, K_v) in 
+  event relyingPartyAccepts(K_v, R_a, c, id);
+  (* out (network, senc(secretR_a, bitstring_to_key(R_a))). *)
+  0.
+
+
+let attesterA(K_a: key, SK_a: skey, PK_a: pkey) = 
+  in(network, Cha: bitstring);
+  new M: bitstring;
+  let h = hash(key_to_bitstring(K_a)) in (* TEE key attestation is abstracted *)
+  let Ev = sign((M, h, Cha) , SK_a) in 
+  event attesterBegins(PK_a, h, M, Cha);
+  out(network, Ev);
+  (* in(network, Res: bitstring);
+  out(network, Res); *)
+  0.
+
+let verifierV(K_v: key, PK_a: pkey) = 
+  in(network, Ev: bitstring);
+  let (M: bitstring, h: bitstring, Cha: bitstring) = checksign(Ev, PK_a) in
+  let (c: nonce, id_cha: bitstring) = sdec(Cha, K_v) in
+  let id = hash((h, PK_a)) in
+  if (id = id_cha) then
+  let R_a = validateEvidence(M) in
+  event verifierAccepts(PK_a, K_v, M, id, c);
+  let Res = senc((R_a, c, id), K_v) in 
+  out(network, Res);
+  0.
+
+
+process (* main method *)
+  new K_a: key;
+  new K_v: key;
+  new SK_a: skey;
+  let PK_a = pk(SK_a) in out(network, PK_a); (* Attacker knows PK_a *)
+  let id = hash((hash(key_to_bitstring(K_a)), PK_a)) in out(network, id);
+  new K_a2: key;
+  event attesterCorrupted(K_a2);
+  new SK_a2: skey; 
+  out(network, SK_a2);
+  let PK_a2 = pk(SK_a2) in out(network, PK_a2);
+  let id2 = hash((hash(key_to_bitstring(K_a2)), PK_a2)) in out(network, id2);
+  (* 1 RP, 2 A and 1 V *)
+  ( 
+      (!relyingPartyRP(K_a, K_v, id)) |
+      (!attesterA(K_a, SK_a, PK_a)) |
+      (!verifierV(K_v, PK_a)) | 
+
+
+      (!relyingPartyRP(K_a2, K_v, id2)) |
+      (!attesterA(K_a2, SK_a2, PK_a2)) |
+      (!verifierV(K_v, PK_a2))
+  )
+
