@@ -14,11 +14,10 @@ iat INTEGER,
 ear-verifierID  AR4si-verifierID,
 ear-rawEvidence UTF8String (PATTERN "[A-Za-z0-9_=-]+") OPTIONAL,
 eat-submods SEQUENCE SIZE(1..100) OF SEQUENCE {
-    attesterID UTF8String, -- not according to spec, have no idea how to model a dict/map
+    attesterID UTF8String, 
     ear-appraisal  EAR-APPRAISAL
 },
 eat-nonce UTF8String (SIZE (10..74)) OPTIONAL
--- not sure how ear-extension should be specified, no mention of it in JSON and CBOR sections
 }
 
 AR4si-verifierID ::= SEQUENCE {
