@@ -1,0 +1,41 @@
+{
+    "eat_profile": "tag:github.com,2023:veraison/ear",
+    "iat": 1666529300,
+    "ear.verifier-id": {
+      "developer": "https://veraison-project.org",
+      "build": "vts 0.0.1"
+    },
+    "ear.raw-evidence": "3q2-7w",
+    "submods": {
+      "CCA Platform": {
+        "ear.status": "affirming",
+        "ear.trustworthiness-vector": {
+          "instance-identity": 2,
+          "configuration": 2,
+          "executables": 3,
+          "file-system": 2,
+          "hardware": 2,
+          "runtime-opaque": 2,
+          "storage-opaque": 2,
+          "sourced-data": 2
+        },
+        "ear.appraisal-policy-id":
+          "https://veraison.example/policy/1/60a0068d"
+      },
+      "CCA Realm": {
+        "ear.status": "affirming",
+        "ear.trustworthiness-vector": {
+          "instance-identity": 2,
+          "configuration": 2,
+          "executables": 3,
+          "file-system": 2,
+          "hardware": 2,
+          "runtime-opaque": 3,
+          "storage-opaque": 2,
+          "sourced-data": 3
+        },
+        "ear.appraisal-policy-id":
+          "https://veraison.example/policy/1/60b0068d"
+      }
+    }
+}

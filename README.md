@@ -1,0 +1,1 @@
+The work done as part of the thesis titled Remote Attestation for Constrained Relying Parties

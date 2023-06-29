@@ -1,0 +1,1 @@
+The prototype is based on Zephyr RTOS's IPSP sample
