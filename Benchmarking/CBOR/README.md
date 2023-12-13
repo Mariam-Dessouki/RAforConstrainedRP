@@ -1,1 +1,0 @@
-The CBOR implementation requires Intel's library TinyCBOR
